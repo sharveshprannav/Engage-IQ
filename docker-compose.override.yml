@@ -1,0 +1,33 @@
+# Docker Compose Development Overrides
+# These settings enable hot-reload and debugging for local development
+
+version: "3.9"
+
+services:
+  backend:
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --log-level debug
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=debug
+
+  worker:
+    command: >
+      celery -A app.agents.orchestrator.celery_app worker
+      --loglevel=debug
+      --concurrency=2
+      -B
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+
+  frontend:
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
