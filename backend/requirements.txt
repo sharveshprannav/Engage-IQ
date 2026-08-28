@@ -19,6 +19,7 @@ greenlet>=3.0.3
 # ─── Validation & Settings ────────────────────────────────────
 pydantic>=2.9.0
 pydantic-settings>=2.5.0
+email-validator>=2.2.0
 
 # ─── Authentication ───────────────────────────────────────────
 python-jose[cryptography]>=3.3.0
