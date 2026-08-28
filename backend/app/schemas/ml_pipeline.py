@@ -78,7 +78,7 @@ class MLPipelineInput(BaseModel):
 
     # CSV input
     csv_content: Optional[str] = Field(
-        None, max_length=50_000,
+        None, max_length=10_000_000,
         description="Raw CSV file text content"
     )
     csv_filename: Optional[str] = Field(None, max_length=255)

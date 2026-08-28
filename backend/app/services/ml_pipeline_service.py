@@ -789,6 +789,9 @@ class MLPipelineService:
             "column_count": len(headers),
             "filename": payload.excel_filename or "unnamed.xlsx",
             "dataset": dataset,
+            "content_summary": content_summary,
+            "prioritized_findings": prioritized_findings,
+            **analysis_meta,
         }
 
         return predictions, False, [], metadata
@@ -1287,6 +1290,7 @@ class MLPipelineService:
         except Exception as exc:
             logger.error("ml_log_persist_failed", error=str(exc))
             await db.rollback()
+            raise exc
 
     # ──────────────────────────────────────────────────────────────────────
     # User Feedback / Correction

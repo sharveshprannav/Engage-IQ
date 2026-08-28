@@ -51,7 +51,7 @@ class MLInferenceLog(Base):
         comment="Client-visible short request ID"
     )
     input_type: Mapped[MLInputType] = mapped_column(
-        Enum(MLInputType, name="ml_input_type", create_constraint=True),
+        Enum(MLInputType, name="ml_input_type", create_constraint=False, native_enum=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         index=True,
     )
@@ -74,7 +74,7 @@ class MLInferenceLog(Base):
         Float, nullable=True, comment="Top-level confidence score (0.0 to 1.0)"
     )
     status: Mapped[MLInferenceStatus] = mapped_column(
-        Enum(MLInferenceStatus, name="ml_inference_status", create_constraint=True),
+        Enum(MLInferenceStatus, name="ml_inference_status", create_constraint=False, native_enum=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=MLInferenceStatus.SUCCESS,
         index=True,

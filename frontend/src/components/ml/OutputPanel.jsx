@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FileText,
   AlertTriangle,
@@ -9,11 +10,13 @@ import {
   PieChart,
   Copy,
   Check,
-  Sparkles
+  Sparkles,
+  History,
 } from 'lucide-react';
 import { Button } from '../common/Button';
 
 export function OutputPanel({ result, requestId }) {
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
   if (!result) {
@@ -126,8 +129,16 @@ export function OutputPanel({ result, requestId }) {
           </div>
         </div>
 
-        {/* CURRENT SESSION EXPORT BUTTONS */}
+        {/* CURRENT SESSION EXPORT BUTTONS & EXPLORER LINK */}
         <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/explorer')}
+            title="Open Feedback Explorer to see full history"
+          >
+            <History className="w-3.5 h-3.5 mr-1" /> View in Explorer
+          </Button>
           <Button variant="outline" size="sm" onClick={handleExportCurrentCSV}>
             <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
           </Button>

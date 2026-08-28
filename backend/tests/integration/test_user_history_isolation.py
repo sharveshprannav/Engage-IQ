@@ -371,3 +371,80 @@ async def test_user_history_export_is_isolated(async_client: AsyncClient):
     items_a = json_res_a.json()
     assert len(items_a) == 1
     assert items_a[0]["category_name"] == "UserA_Cat"
+
+
+@pytest.mark.asyncio
+async def test_csv_and_excel_upload_history(async_client: AsyncClient):
+    """
+    Scenario 9:
+    - User uploads CSV dataset and Excel workbook.
+    - Inference executes with deep row analysis.
+    - History log entries are retrieved with input_type 'csv' and 'excel',
+      containing filename, row counts, and parsed dataset records.
+    """
+    import base64
+    import io
+    import openpyxl
+
+    headers_user, _ = await create_and_auth_user(async_client, "user_spreadsheets")
+
+    # 1. Post CSV inference payload
+    csv_data = "id,feedback,rating\n1,Amazing customer support response,5\n2,System latency spiked above 3000ms,1\n3,Would love an Okta SSO integration,4\n"
+    csv_res = await async_client.post(
+        "/api/v1/ml-pipeline/predict",
+        headers=headers_user,
+        json={
+            "input_type": "csv",
+            "csv_content": csv_data,
+            "csv_filename": "customer_survey_q3.csv",
+            "category_name": "Quarterly Customer Survey",
+        },
+    )
+    assert csv_res.status_code == 200
+    csv_result = csv_res.json()
+    assert csv_result["status"] == "success"
+    assert "customer_survey_q3.csv" in str(csv_result["metadata"])
+
+    # 2. Build a valid minimal Excel workbook in memory and post Excel payload
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "CustomerFeedback"
+    ws.append(["TicketID", "CustomerComment", "Urgency"])
+    ws.append(["TCK-101", "Production payment gateway returns 500", "Critical"])
+    ws.append(["TCK-102", "Love the new dashboard visual charts", "Normal"])
+    excel_buf = io.BytesIO()
+    wb.save(excel_buf)
+    excel_b64 = base64.b64encode(excel_buf.getvalue()).decode()
+
+    excel_res = await async_client.post(
+        "/api/v1/ml-pipeline/predict",
+        headers=headers_user,
+        json={
+            "input_type": "excel",
+            "excel_base64": excel_b64,
+            "excel_filename": "sprint_feedback_matrix.xlsx",
+            "category_name": "Sprint Feedback Matrix",
+        },
+    )
+    assert excel_res.status_code == 200
+    excel_result = excel_res.json()
+    assert excel_result["status"] == "success"
+    assert excel_result["metadata"]["filename"] == "sprint_feedback_matrix.xlsx"
+    assert len(excel_result["metadata"]["dataset"]) == 2
+
+    # 3. Retrieve history logs for user and verify CSV & Excel records exist
+    logs_res = await async_client.get("/api/v1/ml-pipeline/logs", headers=headers_user)
+    assert logs_res.status_code == 200
+    log_items = logs_res.json()["items"]
+    assert len(log_items) == 2
+
+    csv_log = next(item for item in log_items if item["input_type"] == "csv")
+    excel_log = next(item for item in log_items if item["input_type"] == "excel")
+
+    assert csv_log["input_summary"] == "customer_survey_q3.csv"
+    assert csv_log["category_name"] == "Quarterly Customer Survey"
+
+    assert excel_log["input_summary"] == "sprint_feedback_matrix.xlsx"
+    assert excel_log["category_name"] == "Sprint Feedback Matrix"
+    assert "details_json" in excel_log
+

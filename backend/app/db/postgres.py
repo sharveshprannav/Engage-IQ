@@ -66,9 +66,35 @@ async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-        # Ensure user_id column exists in ml_inference_logs for user isolation
+        # Ensure user_id column exists in ml_inference_logs for user isolation and remove obsolete check constraints
         try:
             if is_sqlite:
+                schema_res = await conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='ml_inference_logs';"))
+                schema_row = schema_res.fetchone()
+                if schema_row and schema_row[0] and "NUMERICAL" in schema_row[0]:
+                    # Table has outdated constraint that blocks CSV and EXCEL; rebuild table cleanly
+                    await conn.execute(text("ALTER TABLE ml_inference_logs RENAME TO ml_inference_logs_old;"))
+                    await conn.run_sync(Base.metadata.create_all)
+                    await conn.execute(text("""
+                        INSERT INTO ml_inference_logs (
+                            id, user_id, request_id, input_type, input_hash, model_used,
+                            latency_total_ms, latency_validation_ms, latency_preprocessing_ms,
+                            latency_model_ms, latency_postprocessing_ms, overall_confidence,
+                            status, ambiguity_detected, category_name, primary_label,
+                            input_summary, output_summary, details_json, user_corrected,
+                            corrected_label, correction_note, created_at
+                        )
+                        SELECT 
+                            id, user_id, request_id, input_type, input_hash, model_used,
+                            latency_total_ms, latency_validation_ms, latency_preprocessing_ms,
+                            latency_model_ms, latency_postprocessing_ms, overall_confidence,
+                            status, ambiguity_detected, category_name, primary_label,
+                            input_summary, output_summary, details_json, user_corrected,
+                            corrected_label, correction_note, created_at
+                        FROM ml_inference_logs_old;
+                    """))
+                    await conn.execute(text("DROP TABLE ml_inference_logs_old;"))
+
                 res = await conn.execute(text("PRAGMA table_info(ml_inference_logs);"))
                 columns = [row[1] for row in res.fetchall()]
                 if columns and "user_id" not in columns:

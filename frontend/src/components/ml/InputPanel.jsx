@@ -97,7 +97,8 @@ export function InputPanel({ onSubmit, loading }) {
   // ── Handlers ──────────────────────────────────────────────────────────
   const handleCsvUpload = (file) => {
     if (!file) return;
-    if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+    const nameLower = (file.name || '').toLowerCase();
+    if (!nameLower.endsWith('.csv') && file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
       setValidationErrors(['Only CSV files are supported in this tab.']);
       return;
     }
@@ -112,7 +113,8 @@ export function InputPanel({ onSubmit, loading }) {
 
   const handleExcelUpload = (file) => {
     if (!file) return;
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+    const nameLower = (file.name || '').toLowerCase();
+    if (!nameLower.endsWith('.xlsx') && !nameLower.endsWith('.xls')) {
       setValidationErrors(['Only Excel spreadsheets (.xlsx, .xls) are supported.']);
       return;
     }
