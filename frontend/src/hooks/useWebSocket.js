@@ -2,7 +2,21 @@ import { useEffect, useRef } from 'react';
 import { useFeedbackStore } from '../store/feedbackStore';
 import { useUIStore } from '../store/uiStore';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const getWsUrl = () => {
+  if (import.meta.env.VITE_WS_URL) {
+    return import.meta.env.VITE_WS_URL.replace(/\/+$/, '');
+  }
+  const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+  if (apiUrl.startsWith('https://')) {
+    return apiUrl.replace(/^https:\/\//i, 'wss://');
+  }
+  if (apiUrl.startsWith('http://')) {
+    return apiUrl.replace(/^http:\/\//i, 'ws://');
+  }
+  return 'ws://localhost:8000';
+};
+
+const WS_URL = getWsUrl();
 
 export function useWebSocket() {
   const wsRef = useRef(null);
