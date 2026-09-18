@@ -1,37 +1,30 @@
 import React from 'react';
 import { Chart as ChartJS, LinearScale, PointElement, Tooltip, Legend } from 'chart.js';
 import { Scatter } from 'react-chartjs-2';
+import { Layers } from 'lucide-react';
 
 ChartJS.register(LinearScale, PointElement, Tooltip, Legend);
 
-export function ClusterScatterChart() {
+const CLUSTER_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+
+export function ClusterScatterChart({ clusters = [] }) {
+  if (!clusters || clusters.length === 0) {
+    return (
+      <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-gray-200 dark:border-gray-800 rounded-xl p-4 text-center">
+        <Layers className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">No Semantic Clusters Available</p>
+        <p className="text-xs text-gray-400 mt-0.5">Ingest customer feedback to run clustering analysis.</p>
+      </div>
+    );
+  }
+
   const chartData = {
-    datasets: [
-      {
-        label: 'Auth Issues',
-        data: [{ x: 45, y: -0.65 }],
-        backgroundColor: '#ef4444',
-        pointRadius: 18,
-      },
-      {
-        label: 'Billing Questions',
-        data: [{ x: 30, y: -0.2 }],
-        backgroundColor: '#f59e0b',
-        pointRadius: 14,
-      },
-      {
-        label: 'Feature Requests',
-        data: [{ x: 22, y: 0.4 }],
-        backgroundColor: '#6366f1',
-        pointRadius: 12,
-      },
-      {
-        label: 'Praise & Kudos',
-        data: [{ x: 50, y: 0.85 }],
-        backgroundColor: '#10b981',
-        pointRadius: 20,
-      },
-    ],
+    datasets: clusters.map((c, idx) => ({
+      label: c.label || `Cluster #${idx + 1}`,
+      data: [{ x: c.feedback_count || 1, y: c.avg_sentiment || 0.0 }],
+      backgroundColor: CLUSTER_COLORS[idx % CLUSTER_COLORS.length],
+      pointRadius: Math.min(25, Math.max(10, (c.feedback_count || 1) * 3)),
+    })),
   };
 
   const options = {

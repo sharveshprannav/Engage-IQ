@@ -29,10 +29,17 @@ class InsightsGeneratorService(BaseAIService[InsightsResult]):
     """Executive insights generator."""
 
     async def predict_heuristic(self, text: str, **kwargs: Any) -> InsightsResult:
-        """Template-based aggregation heuristic."""
-        total_items: int = kwargs.get("total_items", 100)
-        top_category: str = kwargs.get("top_category", "bug")
-        neg_percent: float = kwargs.get("neg_percent", 35.0)
+        """Template-based aggregation heuristic based on real database records."""
+        total_items: int = kwargs.get("total_items", 0)
+        top_category: str = kwargs.get("top_category", "feedback")
+        neg_percent: float = kwargs.get("neg_percent", 0.0)
+
+        if total_items == 0:
+            return InsightsResult(
+                executive_summary="No customer feedback data available yet. Ingest feedback via API, upload CSV/Excel files, or submit feedback to generate AI-powered insights.",
+                top_friction_points=[],
+                actionable_insights=[]
+            )
 
         exec_summary = (
             f"Over the evaluated period ({total_items} items ingested), the primary driver of customer sentiment "

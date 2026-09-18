@@ -198,8 +198,14 @@ export function DashboardPage() {
                 <MessageSquare className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-3xl font-extrabold text-gray-900 dark:text-white">{kpis.total_feedback || 128}</p>
-            <p className="text-xs text-emerald-500 font-medium">↑ +{kpis.trend_change_percent || 14}% increase from previous period</p>
+            <p className="text-3xl font-extrabold text-gray-900 dark:text-white">{kpis.total_feedback ?? 0}</p>
+            <p className="text-xs text-emerald-500 font-medium">
+              {kpis.trend_change_percent > 0
+                ? `↑ +${kpis.trend_change_percent}% vs previous period`
+                : kpis.trend_change_percent < 0
+                ? `↓ ${kpis.trend_change_percent}% vs previous period`
+                : 'No prior period comparison'}
+            </p>
           </div>
 
           <div className="p-5 bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-2xl shadow-sm space-y-2">
@@ -210,7 +216,9 @@ export function DashboardPage() {
               </div>
             </div>
             <p className="text-3xl font-extrabold text-gray-900 dark:text-white">
-              {kpis.avg_sentiment ? kpis.avg_sentiment.toFixed(2) : '+0.32'}
+              {kpis.avg_sentiment != null && kpis.total_feedback > 0
+                ? `${kpis.avg_sentiment >= 0 ? '+' : ''}${kpis.avg_sentiment.toFixed(2)}`
+                : '0.00'}
             </p>
             <p className="text-xs text-gray-400">Scale: -1.0 (Critical) to +1.0 (Positive)</p>
           </div>
@@ -219,10 +227,10 @@ export function DashboardPage() {
             <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
               <span className="text-xs font-bold uppercase tracking-wider">High Priority Flagged</span>
               <div className="p-2 bg-rose-50 dark:bg-rose-950/40 text-rose-500 rounded-xl">
-                <AlertOctagon className="w-5 h-5 animate-pulse" />
+                <AlertOctagon className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-3xl font-extrabold text-rose-500">{kpis.open_very_high_count || 3}</p>
+            <p className="text-3xl font-extrabold text-rose-500">{kpis.open_very_high_count ?? 0}</p>
             <p className="text-xs text-rose-400 font-medium">Auto-assigned high severity triage</p>
           </div>
 
@@ -233,7 +241,7 @@ export function DashboardPage() {
                 <Clock className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-3xl font-extrabold text-amber-500">{kpis.sla_breach_count || 1}</p>
+            <p className="text-3xl font-extrabold text-amber-500">{kpis.sla_breach_count ?? 0}</p>
             <p className="text-xs text-gray-400">Response targets within 1 hour SLA</p>
           </div>
         </div>
