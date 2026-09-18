@@ -1,6 +1,8 @@
 import axios from 'axios';
- 
-const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+const rawBaseUrl =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? 'https://engage-iq.onrender.com' : 'http://localhost:8000');
 const API_BASE_URL = rawBaseUrl.replace(/\/+$/, '');
 
 export const axiosClient = axios.create({

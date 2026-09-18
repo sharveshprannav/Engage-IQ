@@ -6,14 +6,15 @@ const getWsUrl = () => {
   if (import.meta.env.VITE_WS_URL) {
     return import.meta.env.VITE_WS_URL.replace(/\/+$/, '');
   }
-  const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
+  const defaultApi = import.meta.env.PROD ? 'https://engage-iq.onrender.com' : 'http://localhost:8000';
+  const apiUrl = (import.meta.env.VITE_API_URL || defaultApi).replace(/\/+$/, '');
   if (apiUrl.startsWith('https://')) {
     return apiUrl.replace(/^https:\/\//i, 'wss://');
   }
   if (apiUrl.startsWith('http://')) {
     return apiUrl.replace(/^http:\/\//i, 'ws://');
   }
-  return 'ws://localhost:8000';
+  return import.meta.env.PROD ? 'wss://engage-iq.onrender.com' : 'ws://localhost:8000';
 };
 
 const WS_URL = getWsUrl();
