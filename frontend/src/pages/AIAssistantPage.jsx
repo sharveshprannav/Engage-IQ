@@ -8,58 +8,14 @@ import {
   Sparkles,
   User,
   Trash2,
-  Key,
-  Settings,
-  CheckCircle2,
-  AlertCircle,
   Loader2,
   Copy,
   Check,
   Zap,
   Database,
-  ExternalLink,
-  X
 } from 'lucide-react';
 
 export function AIAssistantPage() {
-  // Local state for Gemini Settings
-  const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('engageai_gemini_key') || '');
-  const [selectedModel, setSelectedModel] = useState(() => {
-    const saved = localStorage.getItem('engageai_gemini_model');
-    // Clear any fake/nonexistent model names and replace with real ones
-    const fakeModels = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-pro-preview',
-                        'gemini-2.0-flash-exp', 'gemini-2.0-pro-exp'];
-    const modelMap = {
-      'gemini-3.6-flash': 'gemini-2.0-flash',
-      'gemini-3.7-flash': 'gemini-2.5-pro-preview-06-05',
-      'gemini-3.5-flash': 'gemini-1.5-flash',
-      'gemini-3.1-pro-preview': 'gemini-2.5-pro-preview-06-05',
-    };
-    if (!saved || fakeModels.includes(saved)) {
-      const mapped = modelMap[saved] || 'gemini-2.0-flash';
-      localStorage.setItem('engageai_gemini_model', mapped);
-      return mapped;
-    }
-    return saved;
-  });
-
-  useEffect(() => {
-    const saved = localStorage.getItem('engageai_gemini_model');
-    const fakeModels = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-pro-preview'];
-    const modelMap = {
-      'gemini-3.6-flash': 'gemini-2.0-flash',
-      'gemini-3.7-flash': 'gemini-2.5-pro-preview-06-05',
-      'gemini-3.5-flash': 'gemini-1.5-flash',
-      'gemini-3.1-pro-preview': 'gemini-2.5-pro-preview-06-05',
-    };
-    if (!saved || fakeModels.includes(saved)) {
-      const mapped = modelMap[saved] || 'gemini-2.0-flash';
-      localStorage.setItem('engageai_gemini_model', mapped);
-      setSelectedModel(mapped);
-    }
-  }, []);
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [serverStatus, setServerStatus] = useState({ has_key: false, total_feedback_count: 0 });
   const [copiedId, setCopiedId] = useState(null);
 
   // Chat state
@@ -73,7 +29,6 @@ export function AIAssistantPage() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [testStatus, setTestStatus] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -83,50 +38,6 @@ export function AIAssistantPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
-
-  // Fetch backend assistant & server key status on load
-  useEffect(() => {
-    assistantApi.getStatus()
-      .then((res) => {
-        setServerStatus(res.data);
-      })
-      .catch((err) => {
-        console.error('Failed to fetch assistant status:', err);
-      });
-  }, []);
-
-  const handleSaveSettings = (e) => {
-    e?.preventDefault();
-    if (geminiKey.trim()) {
-      localStorage.setItem('engageai_gemini_key', geminiKey.trim());
-    } else {
-      localStorage.removeItem('engageai_gemini_key');
-    }
-    localStorage.setItem('engageai_gemini_model', selectedModel);
-    setTestStatus('Settings saved successfully!');
-    setTimeout(() => {
-      setShowKeyModal(false);
-      setTestStatus(null);
-    }, 1200);
-  };
-
-  const handleTestConnection = async () => {
-    setTestStatus('Testing Gemini connection...');
-    try {
-      const res = await assistantApi.chat(
-        [{ sender: 'user', text: 'Hello! Respond with: "Gemini connection successful!"' }],
-        geminiKey,
-        selectedModel
-      );
-      if (res.data?.text && !res.data.text.includes('Error')) {
-        setTestStatus('✅ Gemini connection successful!');
-      } else {
-        setTestStatus(`❌ ${res.data?.text || 'Connection failed'}`);
-      }
-    } catch (err) {
-      setTestStatus(`❌ Connection error: ${err.response?.data?.detail || err.message}`);
-    }
-  };
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
@@ -151,19 +62,19 @@ export function AIAssistantPage() {
     setLoading(true);
 
     try {
-      // Send conversation history to backend Gemini endpoint
       const payloadMessages = newHistory.map((m) => ({
         sender: m.sender === 'user' ? 'user' : 'assistant',
         text: m.text,
       }));
 
-      const res = await assistantApi.chat(payloadMessages, geminiKey, selectedModel);
-      
+      // No API key passed — backend uses server-side key from .env
+      const res = await assistantApi.chat(payloadMessages, null, 'gemini-2.0-flash');
+
       const botMsg = {
         id: (Date.now() + 1).toString(),
         sender: 'assistant',
         text: res.data?.text || 'No response returned from model.',
-        model: res.data?.model || selectedModel,
+        model: res.data?.model || 'gemini-2.0-flash',
         grounded: res.data?.grounded,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -174,7 +85,7 @@ export function AIAssistantPage() {
       const botMsg = {
         id: (Date.now() + 1).toString(),
         sender: 'assistant',
-        text: `⚠️ **Error**: ${errorMsg}\n\nPlease verify your Gemini API key or network connection.`,
+        text: `⚠️ **Error**: ${errorMsg}\n\nThe backend Gemini API key may not be configured. Please contact the administrator.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, botMsg]);
@@ -189,8 +100,6 @@ export function AIAssistantPage() {
     { title: 'Top trending feedback topics', query: 'What are the key trending customer topics, complaints, and praise in our dataset?' },
     { title: 'Actionable product opportunities', query: 'Generate strategic, actionable product recommendations based on all customer feedback.' },
   ];
-
-  const isKeyActive = Boolean(geminiKey.trim() || serverStatus.has_key);
 
   return (
     <DashboardLayout>
@@ -212,24 +121,12 @@ export function AIAssistantPage() {
                 </span>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Conversational feedback intelligence, sentiment synthesis & SLA triage engine
+                Conversational feedback intelligence, sentiment synthesis &amp; SLA triage engine
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setShowKeyModal(true)}
-              className={`inline-flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                isKeyActive
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
-                  : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 animate-pulse'
-              }`}
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>{isKeyActive ? `Gemini Key Active (${selectedModel})` : '⚙️ Setup Gemini Key'}</span>
-            </button>
-
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -248,118 +145,6 @@ export function AIAssistantPage() {
             </Button>
           </div>
         </div>
-
-        {/* Gemini Settings Modal */}
-        {showKeyModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between border-b border-gray-100 dark:border-dark-border pb-3">
-                <div className="flex items-center space-x-2.5">
-                  <div className="p-2 bg-purple-500/10 rounded-xl text-purple-500">
-                    <Key className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-extrabold text-lg text-gray-900 dark:text-white">
-                    Google Gemini Configuration
-                  </h3>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowKeyModal(false);
-                    setTestStatus(null);
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
-                    Gemini API Key
-                  </label>
-                  <input
-                    type="password"
-                    value={geminiKey}
-                    onChange={(e) => setGeminiKey(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full px-4 py-2.5 bg-gray-50 dark:bg-dark-hover border border-gray-200 dark:border-dark-border rounded-xl text-xs font-mono text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1 flex items-center justify-between">
-                    <span>
-                      {serverStatus.has_key ? '✓ Server .env key detected' : 'Saved locally in your browser'}
-                    </span>
-                    <a
-                      href="https://aistudio.google.com/app/apikey"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-purple-500 hover:underline inline-flex items-center"
-                    >
-                      Get API Key <ExternalLink className="w-3 h-3 ml-0.5" />
-                    </a>
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1.5">
-                    Model Selection
-                  </label>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-dark-hover border border-gray-200 dark:border-dark-border rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    <option value="gemini-2.0-flash">gemini-2.0-flash (Recommended — Fast &amp; Smart)</option>
-                    <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview (Next-Gen Fast)</option>
-                    <option value="gemini-1.5-flash">gemini-1.5-flash (High Throughput)</option>
-                    <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview (Complex Pro Reasoning)</option>
-                    <option value="gemini-1.5-pro">gemini-1.5-pro (Advanced Analysis)</option>
-                  </select>
-                </div>
-
-                {testStatus && (
-                  <div className="p-3 bg-gray-50 dark:bg-dark-hover rounded-xl text-xs font-medium text-gray-700 dark:text-gray-300">
-                    {testStatus}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-dark-border">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestConnection}
-                  disabled={!geminiKey.trim() && !serverStatus.has_key}
-                >
-                  Test Connection
-                </Button>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setShowKeyModal(false);
-                      setTestStatus(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSaveSettings}
-                    className="bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-500/30"
-                  >
-                    Save Key & Settings
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Quick Suggestion Prompts */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -382,9 +167,9 @@ export function AIAssistantPage() {
           {/* Top Chat Status Bar */}
           <div className="px-6 py-3.5 bg-gray-50/80 dark:bg-dark-hover/60 border-b border-gray-200 dark:border-dark-border flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${isKeyActive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
-                EngageAI Assistant — {selectedModel}
+                EngageAI Assistant — gemini-2.0-flash
               </span>
             </div>
             <div className="flex items-center space-x-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium">

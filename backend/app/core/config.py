@@ -52,7 +52,11 @@ class Settings(BaseSettings):
     UVICORN_WORKERS: int = 2
 
     # ─── AI / LLM ──────────────────────────────────────────────
+    # Primary key — always required for Gemini features
     GEMINI_API_KEY: Optional[str] = None
+    # Fallback keys — used automatically when the primary key is exhausted/rate-limited
+    GEMINI_API_KEY_2: Optional[str] = None
+    GEMINI_API_KEY_3: Optional[str] = None
     GEMINI_MODEL: str = "gemini-2.0-flash"
     AI_PROVIDER: str = "gemini"
     OPENAI_API_KEY: Optional[str] = None
