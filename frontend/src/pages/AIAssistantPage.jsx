@@ -26,18 +26,36 @@ export function AIAssistantPage() {
   const [geminiKey, setGeminiKey] = useState(() => localStorage.getItem('engageai_gemini_key') || '');
   const [selectedModel, setSelectedModel] = useState(() => {
     const saved = localStorage.getItem('engageai_gemini_model');
-    if (!saved || saved.includes('gemini-2.0') || saved.includes('gemini-1.5') || saved.includes('gemini-2.5')) {
-      localStorage.setItem('engageai_gemini_model', 'gemini-3.6-flash');
-      return 'gemini-3.6-flash';
+    // Clear any fake/nonexistent model names and replace with real ones
+    const fakeModels = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-pro-preview',
+                        'gemini-2.0-flash-exp', 'gemini-2.0-pro-exp'];
+    const modelMap = {
+      'gemini-3.6-flash': 'gemini-2.0-flash',
+      'gemini-3.7-flash': 'gemini-2.5-pro-preview-06-05',
+      'gemini-3.5-flash': 'gemini-1.5-flash',
+      'gemini-3.1-pro-preview': 'gemini-2.5-pro-preview-06-05',
+    };
+    if (!saved || fakeModels.includes(saved)) {
+      const mapped = modelMap[saved] || 'gemini-2.0-flash';
+      localStorage.setItem('engageai_gemini_model', mapped);
+      return mapped;
     }
     return saved;
   });
 
   useEffect(() => {
     const saved = localStorage.getItem('engageai_gemini_model');
-    if (!saved || saved.includes('gemini-2.0') || saved.includes('gemini-1.5') || saved.includes('gemini-2.5')) {
-      localStorage.setItem('engageai_gemini_model', 'gemini-3.6-flash');
-      setSelectedModel('gemini-3.6-flash');
+    const fakeModels = ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.1-pro-preview'];
+    const modelMap = {
+      'gemini-3.6-flash': 'gemini-2.0-flash',
+      'gemini-3.7-flash': 'gemini-2.5-pro-preview-06-05',
+      'gemini-3.5-flash': 'gemini-1.5-flash',
+      'gemini-3.1-pro-preview': 'gemini-2.5-pro-preview-06-05',
+    };
+    if (!saved || fakeModels.includes(saved)) {
+      const mapped = modelMap[saved] || 'gemini-2.0-flash';
+      localStorage.setItem('engageai_gemini_model', mapped);
+      setSelectedModel(mapped);
     }
   }, []);
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -291,10 +309,11 @@ export function AIAssistantPage() {
                     onChange={(e) => setSelectedModel(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-dark-hover border border-gray-200 dark:border-dark-border rounded-xl text-xs font-medium text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
                   >
-                    <option value="gemini-3.6-flash">gemini-3.6-flash (Recommended — Ultra Fast & Smart)</option>
-                    <option value="gemini-3.7-flash">gemini-3.7-flash (Next-Gen Reasoning & Deep Analysis)</option>
-                    <option value="gemini-3.5-flash">gemini-3.5-flash (High Throughput)</option>
-                    <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Complex Pro Reasoning)</option>
+                    <option value="gemini-2.0-flash">gemini-2.0-flash (Recommended — Fast &amp; Smart)</option>
+                    <option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview (Next-Gen Fast)</option>
+                    <option value="gemini-1.5-flash">gemini-1.5-flash (High Throughput)</option>
+                    <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview (Complex Pro Reasoning)</option>
+                    <option value="gemini-1.5-pro">gemini-1.5-pro (Advanced Analysis)</option>
                   </select>
                 </div>
 

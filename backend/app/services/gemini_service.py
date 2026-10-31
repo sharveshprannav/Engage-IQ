@@ -7,6 +7,7 @@ for conversational intelligence, sentiment synthesis, and RAG database grounding
 from __future__ import annotations
 
 import json
+import uuid
 from typing import Any, Optional
 import httpx
 from sqlalchemy import func, select
@@ -21,21 +22,24 @@ logger = get_logger("GeminiService")
 
 GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
-# Map older/deprecated model names to current active models
+# Map custom/deprecated/nonexistent model names to real Google Gemini API model IDs.
+# Only models listed at https://ai.google.dev/gemini-api/docs/models/gemini are valid.
 MODEL_ALIASES = {
-    "gemini-2.0-flash": "gemini-3.6-flash",
-    "gemini-2.0-flash-exp": "gemini-3.6-flash",
-    "gemini-2.0-flash-lite": "gemini-3.6-flash",
-    "gemini-2.0-pro": "gemini-3.7-flash",
-    "gemini-2.0-pro-exp": "gemini-3.7-flash",
-    "gemini-2.0-flash-thinking-exp": "gemini-3.7-flash",
-    "gemini-1.5-flash": "gemini-3.6-flash",
-    "gemini-1.5-flash-8b": "gemini-3.6-flash",
-    "gemini-1.5-pro": "gemini-3.7-flash",
-    "gemini-2.5-flash": "gemini-3.6-flash",
-    "gemini-2.5-pro": "gemini-3.7-flash",
-    "gemini-flash-latest": "gemini-3.6-flash",
-    "gemini-pro-latest": "gemini-3.7-flash",
+    # Map any fake "gemini-3.x" names (do not exist) to real models
+    "gemini-3.6-flash": "gemini-2.0-flash",
+    "gemini-3.7-flash": "gemini-2.5-pro-preview-06-05",
+    "gemini-3.5-flash": "gemini-1.5-flash",
+    "gemini-3.1-pro-preview": "gemini-2.5-pro-preview-06-05",
+    # Legacy aliases
+    "gemini-2.0-flash-exp": "gemini-2.0-flash-exp",
+    "gemini-2.0-flash-lite": "gemini-2.0-flash-lite",
+    "gemini-2.0-pro-exp": "gemini-2.5-pro-preview-06-05",
+    "gemini-2.0-flash-thinking-exp": "gemini-2.0-flash-thinking-exp-01-21",
+    "gemini-1.5-flash-8b": "gemini-1.5-flash-8b",
+    "gemini-2.5-flash": "gemini-2.5-flash-preview-05-20",
+    "gemini-2.5-pro": "gemini-2.5-pro-preview-06-05",
+    "gemini-flash-latest": "gemini-2.0-flash",
+    "gemini-pro-latest": "gemini-2.5-pro-preview-06-05",
 }
 
 
@@ -43,7 +47,7 @@ class GeminiService:
     """Async client and reasoning service for Google Gemini API."""
 
     def __init__(self) -> None:
-        raw_model = settings.GEMINI_MODEL or "gemini-3.6-flash"
+        raw_model = settings.GEMINI_MODEL or "gemini-2.0-flash"
         self.default_model = MODEL_ALIASES.get(raw_model, raw_model)
 
     def get_api_key(self, custom_key: Optional[str] = None) -> Optional[str]:
@@ -220,9 +224,9 @@ class GeminiService:
             response = await _call_gemini(model)
 
             # Auto-fallback if selected model returned 404, 503 (high demand), or 429
-            if response.status_code in (404, 503, 429) and model != "gemini-3.5-flash":
-                logger.warning("gemini_model_unavailable_falling_back", requested=model, status_code=response.status_code, fallback="gemini-3.5-flash")
-                model = "gemini-3.5-flash"
+            if response.status_code in (404, 503, 429) and model != "gemini-2.0-flash":
+                logger.warning("gemini_model_unavailable_falling_back", requested=model, status_code=response.status_code, fallback="gemini-2.0-flash")
+                model = "gemini-2.0-flash"
                 response = await _call_gemini(model)
 
             if response.status_code != 200:

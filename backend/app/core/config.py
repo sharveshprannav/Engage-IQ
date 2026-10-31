@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
     # ─── AI / LLM ──────────────────────────────────────────────
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-3.6-flash"
+    GEMINI_MODEL: str = "gemini-2.0-flash"
     AI_PROVIDER: str = "gemini"
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o-mini"

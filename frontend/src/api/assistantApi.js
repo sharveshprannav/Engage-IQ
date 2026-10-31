@@ -17,7 +17,7 @@ export const assistantApi = {
       {
         messages,
         api_key: apiKey ? apiKey.trim() : null,
-        model: model || 'gemini-3.6-flash',
+        model: model || 'gemini-2.0-flash',
       },
       { headers }
     );
