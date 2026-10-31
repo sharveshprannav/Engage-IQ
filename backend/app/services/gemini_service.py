@@ -219,10 +219,10 @@ class GeminiService:
         try:
             response = await _call_gemini(model)
 
-            # Auto-fallback to gemini-3.6-flash if selected model returned 404 or unsupported
-            if response.status_code == 404 and model != "gemini-3.6-flash":
-                logger.warning("gemini_model_not_found_falling_back", requested=model, fallback="gemini-3.6-flash")
-                model = "gemini-3.6-flash"
+            # Auto-fallback if selected model returned 404, 503 (high demand), or 429
+            if response.status_code in (404, 503, 429) and model != "gemini-3.5-flash":
+                logger.warning("gemini_model_unavailable_falling_back", requested=model, status_code=response.status_code, fallback="gemini-3.5-flash")
+                model = "gemini-3.5-flash"
                 response = await _call_gemini(model)
 
             if response.status_code != 200:
